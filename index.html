@@ -13,108 +13,110 @@
 </head>
 <body class="bg-gray-50 p-2 sm:p-6 md:p-10">
 
-    <div id="cloudStatus" class="fixed top-0 left-0 w-full bg-indigo-600 text-white text-[10px] font-bold text-center py-1 z-50">
-        ☁️ 포라이트 클라우드 서버 동기화 중...
-    </div>
-
-    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 mt-4">
-        <div class="px-6 py-6 bg-slate-900 text-white flex justify-between items-center">
-            <div>
-                <h1 class="text-xl font-extrabold tracking-tight">🏭 FORLIGHT <span class="text-indigo-400">ADMIN</span></h1>
-                <p class="text-slate-400 text-xs mt-1 font-medium">B2B 파렛트 물류 및 정산 관리</p>
-            </div>
-            <div class="text-right">
-                <span class="bg-indigo-500 text-white px-3 py-1 rounded-full text-[11px] font-bold">관리자용</span>
-            </div>
+    <div id="appContent" style="display: none;">
+        <div id="cloudStatus" class="fixed top-0 left-0 w-full bg-indigo-600 text-white text-[10px] font-bold text-center py-1 z-50">
+            ☁️ 포라이트 클라우드 서버 동기화 중...
         </div>
 
-        <div class="p-4 sm:p-8">
-            <div class="bg-slate-800 rounded-xl p-6 mb-8 text-white shadow-md relative overflow-hidden">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3 relative z-10">
-                    <h2 class="text-lg font-bold flex items-center gap-2">📊 월별 정산 요약</h2>
-                    <select id="monthSelector" onchange="handleMonthChange()" class="bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"></select>
+        <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 mt-4">
+            <div class="px-6 py-6 bg-slate-900 text-white flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight">🏭 FORLIGHT <span class="text-indigo-400">ADMIN</span></h1>
+                    <p class="text-slate-400 text-xs mt-1 font-medium">B2B 파렛트 물류 및 정산 관리</p>
                 </div>
-
-                <div class="mb-8 relative z-10">
-                    <p class="text-slate-400 text-xs font-bold mb-1">선택한 월 합산 매출액</p>
-                    <div class="text-3xl font-black text-indigo-400"><span id="monthlyTotalRevenue">0</span> <span class="text-lg font-medium text-white opacity-60">원</span></div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
-                    <div onclick="openStorageModal()" class="bg-white/10 hover:bg-white/20 p-4 rounded-lg border border-white/10 transition cursor-pointer group">
-                        <p class="text-xs text-slate-300 font-bold mb-2 flex justify-between">📦 보관료 (900원) <span class="group-hover:text-indigo-300">🔍</span></p>
-                        <p class="text-lg font-bold"><span id="monthlyStorageFee">0</span> 원</p>
-                    </div>
-                    <div onclick="openInOutModal('OUT')" class="bg-white/10 hover:bg-white/20 p-4 rounded-lg border border-white/10 transition cursor-pointer group">
-                        <p class="text-xs text-slate-300 font-bold mb-2 flex justify-between">🚚 출고비 (자체/쿠팡) <span class="group-hover:text-indigo-300">🔍</span></p>
-                        <p class="text-lg font-bold"><span id="monthlyOutFee">0</span> 원</p>
-                    </div>
-                    <div onclick="openInOutModal('IN')" class="bg-white/10 hover:bg-white/20 p-4 rounded-lg border border-white/10 transition cursor-pointer group">
-                        <p class="text-xs text-slate-300 font-bold mb-2 flex justify-between">📥 입고비 (40ft HC) <span class="group-hover:text-indigo-300">🔍</span></p>
-                        <p class="text-lg font-bold"><span id="monthlyInFee">0</span> 원</p>
-                    </div>
+                <div class="text-right">
+                    <span class="bg-indigo-500 text-white px-3 py-1 rounded-full text-[11px] font-bold">관리자용</span>
                 </div>
             </div>
 
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8">
-                <h3 class="text-sm font-bold text-slate-600 mb-4">✏️ 작업 등록 (입출고)</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-500">작업 일자</label>
-                        <input type="date" id="workDate" class="w-full p-2 border border-slate-300 rounded-lg font-semibold outline-none">
+            <div class="p-4 sm:p-8">
+                <div class="bg-slate-800 rounded-xl p-6 mb-8 text-white shadow-md relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3 relative z-10">
+                        <h2 class="text-lg font-bold flex items-center gap-2">📊 월별 정산 요약</h2>
+                        <select id="monthSelector" onchange="handleMonthChange()" class="bg-slate-700 text-white border border-slate-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"></select>
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-500">작업 구분</label>
-                        <select id="workType" onchange="updateUI()" class="w-full p-2 border border-slate-300 rounded-lg font-bold text-indigo-700 outline-none">
-                            <option value="OUT_COUPANG">📦 쿠팡 출고 (19,000원)</option>
-                            <option value="OUT_SELF">🚚 자체 출고 (15,000원)</option>
-                            <option value="IN">➕ 컨테이너 입고 (35만원)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-indigo-700">작업 수량 (PLT)</label>
-                        <input type="number" id="pltQty" value="0" class="w-full p-2 border border-slate-300 bg-indigo-50 rounded-lg font-bold text-center text-lg outline-none">
-                    </div>
-                    <div id="kppSection" class="space-y-1" style="display:none;">
-                        <label class="text-xs font-bold text-red-600">KPP 미수파렛트 (개)</label>
-                        <input type="number" id="kppQty" value="0" class="w-full p-2 border border-red-200 bg-red-50 rounded-lg font-bold text-center text-lg text-red-600 outline-none">
-                    </div>
-                </div>
-                <div class="space-y-1 mb-5">
-                    <label class="text-xs font-bold text-slate-500">비고 (메모)</label>
-                    <input type="text" id="memoInput" placeholder="출고처 또는 특이사항 입력" class="w-full p-2 border border-slate-300 rounded-lg outline-none">
-                </div>
-                <button onclick="processStock()" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all">쿠팡 출고 등록</button>
-            </div>
 
-            <div class="flex justify-between items-end mb-3">
-                <h3 class="text-lg font-bold text-slate-800">📋 실시간 B2B 재고 현황</h3>
-                <span class="text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100" id="todayPltBadge">총 0 PLT</span>
-            </div>
-            <div class="overflow-x-auto mb-8">
-                <table class="w-full border-collapse bg-white border rounded-lg">
-                    <thead>
-                        <tr class="bg-slate-800 text-white text-sm">
-                            <th class="p-3 text-left">품목명</th>
-                            <th class="p-3 text-center">현재고 (PLT)</th>
-                            <th class="p-3 text-center text-red-400">누적 KPP 미수</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTable" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
+                    <div class="mb-8 relative z-10">
+                        <p class="text-slate-400 text-xs font-bold mb-1">선택한 월 합산 매출액</p>
+                        <div class="text-3xl font-black text-indigo-400"><span id="monthlyTotalRevenue">0</span> <span class="text-lg font-medium text-white opacity-60">원</span></div>
+                    </div>
 
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                <h3 class="text-lg font-bold text-slate-800">🔍 <span id="logTitleMonth" class="text-indigo-600"></span> 상세 내역</h3>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <input type="date" id="searchDate" onchange="render()" class="text-xs p-2 border border-slate-300 rounded flex-1 outline-none">
-                    <button onclick="document.getElementById('searchDate').value=''; render()" class="text-xs bg-slate-200 px-3 py-2 rounded font-bold hover:bg-slate-300">전체보기</button>
-                    <button onclick="requestPasswordThen('clearHistory')" class="text-xs text-white bg-red-500 hover:bg-red-600 border border-red-600 px-3 py-2 rounded font-bold shadow-sm">초기화</button>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
+                        <div onclick="openStorageModal()" class="bg-white/10 hover:bg-white/20 p-4 rounded-lg border border-white/10 transition cursor-pointer group">
+                            <p class="text-xs text-slate-300 font-bold mb-2 flex justify-between">📦 보관료 (900원) <span class="group-hover:text-indigo-300">🔍</span></p>
+                            <p class="text-lg font-bold"><span id="monthlyStorageFee">0</span> 원</p>
+                        </div>
+                        <div onclick="openInOutModal('OUT')" class="bg-white/10 hover:bg-white/20 p-4 rounded-lg border border-white/10 transition cursor-pointer group">
+                            <p class="text-xs text-slate-300 font-bold mb-2 flex justify-between">🚚 출고비 (자체/쿠팡) <span class="group-hover:text-indigo-300">🔍</span></p>
+                            <p class="text-lg font-bold"><span id="monthlyOutFee">0</span> 원</p>
+                        </div>
+                        <div onclick="openInOutModal('IN')" class="bg-white/10 hover:bg-white/20 p-4 rounded-lg border border-white/10 transition cursor-pointer group">
+                            <p class="text-xs text-slate-300 font-bold mb-2 flex justify-between">📥 입고비 (40ft HC) <span class="group-hover:text-indigo-300">🔍</span></p>
+                            <p class="text-lg font-bold"><span id="monthlyInFee">0</span> 원</p>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8">
+                    <h3 class="text-sm font-bold text-slate-600 mb-4">✏️ 작업 등록 (입출고)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">작업 일자</label>
+                            <input type="date" id="workDate" class="w-full p-2 border border-slate-300 rounded-lg font-semibold outline-none">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">작업 구분</label>
+                            <select id="workType" onchange="updateUI()" class="w-full p-2 border border-slate-300 rounded-lg font-bold text-indigo-700 outline-none">
+                                <option value="OUT_COUPANG">📦 쿠팡 출고 (19,000원)</option>
+                                <option value="OUT_SELF">🚚 자체 출고 (15,000원)</option>
+                                <option value="IN">➕ 컨테이너 입고 (35만원)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-indigo-700">작업 수량 (PLT)</label>
+                            <input type="number" id="pltQty" value="0" class="w-full p-2 border border-slate-300 bg-indigo-50 rounded-lg font-bold text-center text-lg outline-none">
+                        </div>
+                        <div id="kppSection" class="space-y-1" style="display:none;">
+                            <label class="text-xs font-bold text-red-600">KPP 미수파렛트 (개)</label>
+                            <input type="number" id="kppQty" value="0" class="w-full p-2 border border-red-200 bg-red-50 rounded-lg font-bold text-center text-lg text-red-600 outline-none">
+                        </div>
+                    </div>
+                    <div class="space-y-1 mb-5">
+                        <label class="text-xs font-bold text-slate-500">비고 (메모)</label>
+                        <input type="text" id="memoInput" placeholder="출고처 또는 특이사항 입력" class="w-full p-2 border border-slate-300 rounded-lg outline-none">
+                    </div>
+                    <button onclick="processStock()" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all">쿠팡 출고 등록</button>
+                </div>
+
+                <div class="flex justify-between items-end mb-3">
+                    <h3 class="text-lg font-bold text-slate-800">📋 실시간 B2B 재고 현황</h3>
+                    <span class="text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100" id="todayPltBadge">총 0 PLT</span>
+                </div>
+                <div class="overflow-x-auto mb-8">
+                    <table class="w-full border-collapse bg-white border rounded-lg">
+                        <thead>
+                            <tr class="bg-slate-800 text-white text-sm">
+                                <th class="p-3 text-left">품목명</th>
+                                <th class="p-3 text-center">현재고 (PLT)</th>
+                                <th class="p-3 text-center text-red-400">누적 KPP 미수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTable" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                    <h3 class="text-lg font-bold text-slate-800">🔍 <span id="logTitleMonth" class="text-indigo-600"></span> 상세 내역</h3>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <input type="date" id="searchDate" onchange="render()" class="text-xs p-2 border border-slate-300 rounded flex-1 outline-none">
+                        <button onclick="document.getElementById('searchDate').value=''; render()" class="text-xs bg-slate-200 px-3 py-2 rounded font-bold hover:bg-slate-300">전체보기</button>
+                        <button onclick="requestPasswordThen('clearHistory')" class="text-xs text-white bg-red-500 hover:bg-red-600 border border-red-600 px-3 py-2 rounded font-bold shadow-sm">초기화</button>
+                    </div>
+                </div>
+                <div id="logContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
             </div>
-            <div id="logContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
         </div>
     </div>
 
@@ -138,13 +140,13 @@
         </div>
     </div>
 
-    <div id="pwModal" style="display:none;" class="fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-3">
-        <div class="bg-white rounded-xl p-6 w-full max-w-xs text-center">
-            <h2 class="text-lg font-bold mb-2">관리자 인증</h2>
+    <div id="pwModal" style="display:flex;" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center p-3">
+        <div class="bg-white rounded-xl p-6 w-full max-w-xs text-center shadow-2xl">
+            <h2 class="text-lg font-bold mb-2 text-slate-800">관리자 인증</h2>
+            <p class="text-slate-400 text-xs mb-4">보안을 위해 비밀번호를 입력해 주세요.</p>
             <input type="password" id="pwInput" class="w-full text-center text-xl font-bold p-2 border rounded focus:border-indigo-500 outline-none mb-4" placeholder="비밀번호">
             <div class="flex gap-2">
-                <button onclick="closePwModal()" class="flex-1 py-2 bg-slate-100 font-bold rounded">취소</button>
-                <button onclick="confirmPassword()" class="flex-1 py-2 bg-red-500 text-white font-bold rounded">확인</button>
+                <button onclick="confirmPassword()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded shadow-md">확인</button>
             </div>
         </div>
     </div>
@@ -153,7 +155,7 @@
         const FIREBASE_URL = "https://ts3pl-982ef-default-rtdb.firebaseio.com/forlight_data.json";
         const ADMIN_PW = "4656";
         
-        // 💡 올바른 초기 데이터
+        // 올바른 초기 세팅 데이터 (초기화 시 복구용)
         const defaultInventory = [{ id: "main", name: "60W led", plt: 44, kpp: 4 }];
         const defaultDailyPlt = {};
         for(let i=1; i<=20; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 64;
@@ -168,27 +170,67 @@
 
         let inventory = [], logs = [], dailyPltLog = {}, currentMonth = "2026-05";
 
+        // 최초 로딩 시 설정
         document.addEventListener("DOMContentLoaded", () => {
-            const today = new Date();
-            document.getElementById('workDate').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-            updateUI();
-            fetchData();
+            window.pendingAction = 'init'; 
+            
+            // 비밀번호 창에서 엔터키 누르면 바로 인증되도록 설정
+            document.getElementById('pwInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') confirmPassword();
+            });
         });
 
+        // 비밀번호 확인 및 동작 분기
+        function confirmPassword() { 
+            if(document.getElementById('pwInput').value === ADMIN_PW) { 
+                document.getElementById('pwModal').style.display = "none"; // 모달 숨김
+                
+                // 최초 진입 시 화면 표시 및 데이터 로드
+                if(window.pendingAction === 'init') { 
+                    document.getElementById('appContent').style.display = "block"; 
+                    const today = new Date();
+                    document.getElementById('workDate').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                    updateUI();
+                    fetchData();
+                    window.pendingAction = null;
+                } 
+                // 하단 초기화 버튼을 누른 경우 클라우드 데이터 덮어쓰기
+                else if(window.pendingAction === 'clearHistory') { 
+                    inventory = JSON.parse(JSON.stringify(defaultInventory));
+                    logs = JSON.parse(JSON.stringify(defaultLogs));
+                    dailyPltLog = JSON.parse(JSON.stringify(defaultDailyPlt));
+                    saveData(); 
+                    alert('서버 정정 데이터가 정상적으로 동기화되었습니다.');
+                    window.pendingAction = null;
+                }
+            } else { 
+                alert('비밀번호가 틀렸습니다.'); 
+            }
+        }
+
+        // 특정 동작(초기화 등) 전 비밀번호를 묻기 위해 모달을 띄움
+        function requestPasswordThen(action) { 
+            window.pendingAction = action; 
+            document.getElementById('pwInput').value = ""; 
+            document.getElementById('pwModal').style.display = 'flex'; 
+            document.getElementById('pwInput').focus();
+        }
+
+        // 파이어베이스에서 데이터 가져오기
         function fetchData() {
             fetch(FIREBASE_URL).then(res => res.json()).then(data => {
                 if(data) {
                     inventory = data.inventory || defaultInventory;
                     logs = data.logs || defaultLogs;
                     dailyPltLog = data.dailyPltLog || defaultDailyPlt;
-                    document.getElementById('cloudStatus').innerText = "🟢 클라우드 서버와 정상 연결됨";
-                    document.getElementById('cloudStatus').className = "fixed top-0 left-0 w-full bg-emerald-500 text-white text-[10px] font-bold text-center py-1 z-50";
                 } else {
                     inventory = JSON.parse(JSON.stringify(defaultInventory)); 
                     logs = JSON.parse(JSON.stringify(defaultLogs)); 
                     dailyPltLog = JSON.parse(JSON.stringify(defaultDailyPlt));
                     saveData();
                 }
+                document.getElementById('cloudStatus').innerText = "🟢 클라우드 서버와 정상 연결됨";
+                document.getElementById('cloudStatus').className = "fixed top-0 left-0 w-full bg-emerald-500 text-white text-[10px] font-bold text-center py-1 z-50";
                 render();
             }).catch(e => {
                 document.getElementById('cloudStatus').innerText = "🔴 통신 오류 발생 (인터넷 확인)";
@@ -247,7 +289,6 @@
             document.getElementById('logTitleMonth').innerText = currentMonth;
             const filteredLogs = logs.filter(l => l.time.startsWith(currentMonth) && (!document.getElementById('searchDate').value || l.time.startsWith(document.getElementById('searchDate').value)));
             
-            // ✅ 삭제 버튼 오류 수정 완료 (순서 꼬임 방지)
             document.getElementById('logContainer').innerHTML = filteredLogs.length === 0 ? `<div class="p-4 text-center text-slate-400">내역 없음</div>` : filteredLogs.map((l) => {
                 const actualIdx = logs.indexOf(l); 
                 const isOut = l.type.includes('OUT');
@@ -283,7 +324,7 @@
         }
 
         function deleteLog(idx) {
-            if(!confirm('삭제하시겠습니까? (삭제 시 재고 및 미수 파렛트가 자동으로 복구됩니다)')) return;
+            if(!confirm('해당 로그 내역을 취소 및 삭제하시겠습니까?')) return;
             const log = logs[idx];
             if(log.type === 'IN') inventory[0].plt -= log.plt;
             else { 
@@ -316,23 +357,6 @@
 
         function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
         function closePwModal() { document.getElementById('pwModal').style.display = 'none'; }
-        function requestPasswordThen(action) { window.pendingAction = action; document.getElementById('pwInput').value = ""; document.getElementById('pwModal').style.display = 'flex'; }
-        
-        // ✅ DB 초기화 시 올바른 포라이트 과거 데이터로 완벽 복구
-        function confirmPassword() { 
-            if(document.getElementById('pwInput').value === ADMIN_PW) { 
-                if(window.pendingAction === 'clearHistory') { 
-                    inventory = JSON.parse(JSON.stringify(defaultInventory));
-                    logs = JSON.parse(JSON.stringify(defaultLogs));
-                    dailyPltLog = JSON.parse(JSON.stringify(defaultDailyPlt));
-                    saveData(); 
-                    alert('정상적으로 서버 데이터가 초기화되었습니다.');
-                } 
-                closePwModal(); 
-            } else { 
-                alert('비밀번호가 틀렸습니다.'); 
-            }
-        }
         function handleMonthChange() { currentMonth = document.getElementById('monthSelector').value; document.getElementById('searchDate').value = ''; render(); }
     </script>
 </body>
