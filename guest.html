@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-100 p-2 sm:p-6 md:p-10">
 
-    <div id="statusIndicator" class="fixed top-0 left-0 w-full bg-emerald-500 text-white text-[10px] font-bold text-center py-1 z-50">
+    <div id="statusIndicator" class="fixed top-0 left-0 w-full bg-emerald-500 text-white text-[10px] font-bold text-center py-1 z-50 shadow-sm">
         🟢 실시간 재고 자동 갱신 중 (3초 간격)
     </div>
 
@@ -27,7 +27,7 @@
             <div class="bg-indigo-900 rounded-xl p-6 mb-8 text-white shadow-md relative">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-bold">📊 월별 정산 내역</h2>
-                    <select id="monthSelector" onchange="handleMonthChange()" class="bg-indigo-800 text-white border border-indigo-600 rounded p-2 text-sm outline-none"></select>
+                    <select id="monthSelector" onchange="handleMonthChange()" class="bg-indigo-800 text-white border border-indigo-600 rounded p-2 text-sm outline-none cursor-pointer"></select>
                 </div>
                 <div class="mb-8">
                     <p class="text-indigo-300 text-xs font-bold mb-1">이번 달 정산 예정액</p>
@@ -35,31 +35,42 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div onclick="openStorageModal()" class="bg-black/20 p-4 rounded-lg cursor-pointer hover:bg-black/30 transition">
-                        <p class="text-xs text-indigo-200 font-bold mb-1 flex justify-between">📦 보관료 🔍</p>
+                        <p class="text-xs text-indigo-200 font-bold mb-1 flex justify-between">📦 보관료 (900원/일) 🔍</p>
                         <p class="text-lg font-bold"><span id="monthlyStorageFee">0</span> 원</p>
                     </div>
                     <div onclick="openInOutModal('OUT')" class="bg-black/20 p-4 rounded-lg cursor-pointer hover:bg-black/30 transition">
-                        <p class="text-xs text-indigo-200 font-bold mb-1 flex justify-between">🚚 출고비 🔍</p>
+                        <p class="text-xs text-indigo-200 font-bold mb-1 flex justify-between">🚚 출고비 (자체/쿠팡) 🔍</p>
                         <p class="text-lg font-bold"><span id="monthlyOutFee">0</span> 원</p>
                     </div>
                     <div onclick="openInOutModal('IN')" class="bg-black/20 p-4 rounded-lg cursor-pointer hover:bg-black/30 transition">
-                        <p class="text-xs text-indigo-200 font-bold mb-1 flex justify-between">📥 입고비 🔍</p>
+                        <p class="text-xs text-indigo-200 font-bold mb-1 flex justify-between">📥 입고비 (40ft HC) 🔍</p>
                         <p class="text-lg font-bold"><span id="monthlyInFee">0</span> 원</p>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-3 flex justify-between items-end">
-                <h3 class="text-lg font-bold text-slate-800">📋 현재고</h3>
-                <span class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-bold border border-emerald-100" id="totalBadge">0 PLT</span>
+            <div class="flex justify-between items-end mb-3">
+                <h3 class="text-lg font-bold text-slate-800">📋 실시간 B2B 재고 현황 <span class="text-xs font-normal text-slate-400">(규격: 1PLT = 120개)</span></h3>
+                <span class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-bold border border-emerald-100" id="totalBadge">정산 계산중...</span>
             </div>
             
-            <div class="bg-white border border-slate-200 rounded-lg p-4 mb-8 shadow-sm">
-                <div id="inventoryDisplay" class="divide-y divide-slate-100"></div>
+            <div class="overflow-x-auto mb-8">
+                <table class="w-full border-collapse bg-white border rounded-lg shadow-sm">
+                    <thead>
+                        <tr class="bg-slate-800 text-white text-sm">
+                            <th class="p-3 text-left">품목명</th>
+                            <th class="p-3 text-center">현재고 (PLT)</th>
+                            <th class="p-3 text-center">현재고 (낱개)</th>
+                            <th class="p-3 text-center text-amber-400">정산 보관료 적용 (PLT)</th>
+                            <th class="p-3 text-center text-red-400">누적 KPP 미수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryDisplay" class="divide-y divide-slate-100 text-center"></tbody>
+                </table>
             </div>
 
             <div class="flex justify-between items-center mb-3">
-                <h3 class="text-lg font-bold text-slate-800">🔍 <span id="logTitleMonth" class="text-indigo-600"></span> 입출고 내역</h3>
+                <h3 class="text-lg font-bold text-slate-800">🔍 <span id="logTitleMonth" class="text-indigo-600"></span> 입출고 상세 내역</h3>
             </div>
             <div id="logContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1 modal-scroll"></div>
         </div>
@@ -98,7 +109,7 @@
                 render();
             }).catch(() => {
                 document.getElementById('statusIndicator').innerText = "🔴 서버 연결 중단. 잠시 후 재시도합니다.";
-                document.getElementById('statusIndicator').className = "fixed top-0 left-0 w-full bg-red-500 text-white text-[10px] font-bold text-center py-1 z-50";
+                document.getElementById('statusIndicator').className = "fixed top-0 left-0 w-full bg-red-500 text-white text-[10px] font-bold text-center py-1 z-50 shadow-sm";
             });
         }
 
@@ -109,16 +120,19 @@
             const item = inventory[0];
             if(!item) return;
 
+            // 보관료 청구 계산용 파렛트 올림값 산정
+            const billingPlt = Math.ceil(((item.plt * 120) + (item.pcs || 0)) / 120);
+
             document.getElementById('inventoryDisplay').innerHTML = `
-                <div class="flex justify-between items-center py-2">
-                    <span class="font-bold text-slate-700 text-lg">${item.name}</span>
-                    <div class="flex items-center gap-4">
-                        <span class="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-bold">${item.plt} PLT</span>
-                        <span class="text-sm font-bold text-red-500">KPP 미수: ${item.kpp} 개</span>
-                    </div>
-                </div>
+                <tr>
+                    <td class="p-3 font-bold text-slate-700 text-left">${item.name}</td>
+                    <td class="p-3 text-center font-bold text-indigo-600">${item.plt} PLT</td>
+                    <td class="p-3 text-center font-bold text-purple-600">${item.pcs || 0} 개</td>
+                    <td class="p-3 text-center"><span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-black text-xs border border-amber-200">${billingPlt} PLT</span></td>
+                    <td class="p-3 text-center font-bold text-red-500">${item.kpp || 0} 개</td>
+                </tr>
             `;
-            document.getElementById('totalBadge').innerText = `총 ${item.plt} PLT 보관 중`;
+            document.getElementById('totalBadge').innerText = `청구보관: ${billingPlt} PLT`;
 
             const months = Array.from(new Set(["2026-05", ...logs.map(l => l.time.substring(0, 7)), ...Object.keys(dailyPltLog).map(d => d.substring(0, 7))])).sort().reverse();
             document.getElementById('monthSelector').innerHTML = months.map(m => `<option value="${m}" ${m===currentMonth?'selected':''}>${m.replace('-','년 ')}월</option>`).join('');
@@ -134,7 +148,7 @@
                 return `
                 <div class="p-3 bg-white border-l-4 ${borderColor} rounded shadow-sm">
                     <p class="font-bold ${textColor} text-sm">${l.text}</p>
-                    <p class="text-xs text-slate-500 mt-1">${l.time} <span class="bg-indigo-50 text-indigo-600 px-1 rounded border border-indigo-100 ml-1 font-bold">💰 ${l.fee.toLocaleString()}원</span></p>
+                    <p class="text-xs text-slate-500 mt-1">${l.time} <span class="bg-indigo-50 text-indigo-600 px-1 rounded border border-indigo-100 ml-1 font-bold">💰 ${(l.fee||0).toLocaleString()}원</span></p>
                     ${l.memo ? `<p class="text-xs text-red-600 bg-red-50 p-1.5 mt-2 rounded font-semibold">📌 ${l.memo}</p>` : ''}
                 </div>
             `}).join('');
