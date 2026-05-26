@@ -11,7 +11,7 @@
         .modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-gray-100 p-2 sm:p-6 md:p-10">
+<body class="bg-gray-50 p-2 sm:p-6 md:p-10">
 
     <div id="statusIndicator" class="fixed top-0 left-0 w-full bg-emerald-500 text-white text-[10px] font-bold text-center py-1 z-50 shadow-sm">
         🟢 실시간 재고 자동 갱신 중 (3초 간격)
@@ -98,14 +98,34 @@
 
     <script>
         const FIREBASE_URL = "https://ts3pl-982ef-default-rtdb.firebaseio.com/forlight_data.json";
+        
+        // 💡 관리자 페이지와 동일한 정정 데이터 (서버가 비었을 때 기본 출력용)
+        const defaultInventory = [{ id: "main", name: "60W led", plt: 43, pcs: 36, kpp: 4 }];
+        const defaultDailyPlt = {};
+        for(let i=1; i<=20; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 64;
+        defaultDailyPlt[`2026-05-21`] = 46;
+        for(let i=22; i<=26; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 44;
+
+        const defaultLogs = [
+            { id: 1, type: "OUT_SELF", plt: 2, pcs: 0, kpp: 2, fee: 30000, text: "[자체출고] 🚚 2PLT 0개", memo: "KPP 미수파렛트 2개 발생", time: "2026-05-21 14:10" },
+            { id: 2, type: "OUT_SELF", plt: 2, pcs: 0, kpp: 2, fee: 30000, text: "[자체출고] 🚚 2PLT 0개", memo: "KPP 미수파렛트 2개 발생", time: "2026-05-20 16:30" },
+            { id: 3, type: "OUT_COUPANG", plt: 16, pcs: 0, kpp: 0, fee: 304000, text: "[쿠팡출고] 📦 16PLT 0개", memo: "", time: "2026-05-20 09:15" }
+        ];
+
         let inventory = [], logs = [], dailyPltLog = {}, currentMonth = "2026-05";
 
         function update() {
             fetch(FIREBASE_URL, { cache: "no-store" }).then(res => res.json()).then(data => {
-                if(!data) return;
-                inventory = data.inventory || [];
-                logs = data.logs || [];
-                dailyPltLog = data.dailyPltLog || {};
+                if(data && data.inventory) {
+                    inventory = data.inventory;
+                    logs = data.logs || [];
+                    dailyPltLog = data.dailyPltLog || {};
+                } else {
+                    // 서버가 비었을 경우 기본 데이터 띄우기
+                    inventory = JSON.parse(JSON.stringify(defaultInventory));
+                    logs = JSON.parse(JSON.stringify(defaultLogs));
+                    dailyPltLog = JSON.parse(JSON.stringify(defaultDailyPlt));
+                }
                 render();
             }).catch(() => {
                 document.getElementById('statusIndicator').innerText = "🔴 서버 연결 중단. 잠시 후 재시도합니다.";
