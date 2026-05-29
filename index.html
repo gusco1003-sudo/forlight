@@ -200,9 +200,9 @@
         
         const defaultInventory = [{ id: "main", name: "60W led", plt: 43, pcs: 36, kpp: 4 }];
         const defaultDailyPlt = {};
-        for(let i=1; i<=20; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 64;
-        defaultDailyPlt[`2026-05-21`] = 46;
-        for(let i=22; i<=26; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 44;
+        for(let i=1; i<=19; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 64;
+        defaultDailyPlt[`2026-05-20`] = 46; 
+        for(let i=21; i<=26; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 44;
 
         const defaultLogs = [
             { id: 1, type: "OUT_SELF", plt: 2, pcs: 0, kpp: 2, fee: 30000, text: "[자체출고] 🚚 2PLT 0개", memo: "KPP 미수파렛트 2개 발생", time: "2026-05-21 14:10" },
@@ -210,7 +210,7 @@
             { id: 3, type: "OUT_COUPANG", plt: 16, pcs: 0, kpp: 0, fee: 304000, text: "[쿠팡출고] 📦 16PLT 0개", memo: "", time: "2026-05-20 09:15" }
         ];
 
-        let inventory = [], logs = [], dailyPltLog = {}, currentMonth = "2026-05";
+        let inventory = [], logs = [], dailyPltLog = {}, manualStorageLog = {}, currentMonth = "2026-05";
 
         document.addEventListener("DOMContentLoaded", () => {
             window.pendingAction = 'init'; 
@@ -239,6 +239,7 @@
                     inventory = JSON.parse(JSON.stringify(defaultInventory));
                     logs = JSON.parse(JSON.stringify(defaultLogs));
                     dailyPltLog = JSON.parse(JSON.stringify(defaultDailyPlt));
+                    manualStorageLog = {};
                     saveData(); 
                     alert('서버 데이터 초기 연동 정정이 정상 완료되었습니다.');
                     window.pendingAction = null;
@@ -261,16 +262,17 @@
         }
 
         function fetchData() {
-            // [캐시 방지 코드 탑재]
             fetch(FIREBASE_URL + "?t=" + new Date().getTime()).then(res => res.json()).then(data => {
                 if(data) {
                     inventory = data.inventory || defaultInventory;
                     logs = data.logs || defaultLogs;
                     dailyPltLog = data.dailyPltLog || defaultDailyPlt;
+                    manualStorageLog = data.manualStorageLog || {};
                 } else {
                     inventory = JSON.parse(JSON.stringify(defaultInventory)); 
                     logs = JSON.parse(JSON.stringify(defaultLogs)); 
                     dailyPltLog = JSON.parse(JSON.stringify(defaultDailyPlt));
+                    manualStorageLog = {};
                     saveData();
                 }
                 document.getElementById('cloudStatus').innerText = "🟢 클라우드 서버와 정상 연결됨";
@@ -285,10 +287,11 @@
         function saveData() {
             fetch(FIREBASE_URL, {
                 method: "PUT", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ inventory, logs, dailyPltLog })
+                body: JSON.stringify({ inventory, logs, dailyPltLog, manualStorageLog })
             }).then(() => render());
         }
 
+        // 💡 [보관료 마감재고 산정 및 강제 수정 연동]
         function buildDailyStorage(month) {
             const series = {};
             const [year, mon] = month.split('-').map(Number);
@@ -296,22 +299,41 @@
             const todayMonthStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
             const lastDayOfMonth = new Date(year, mon, 0).getDate();
 
-            let endDay;
-            if (month > todayMonthStr) endDay = 0;                 
-            else if (month === todayMonthStr) endDay = today.getDate(); 
-            else endDay = lastDayOfMonth;                          
-
+            let endDay = (month > todayMonthStr) ? 0 : (month === todayMonthStr ? today.getDate() : lastDayOfMonth);
             const monthStart = `${month}-01`;
-            let lastVal = null;
+            
+            let runningInventory = null;
             const priorDates = Object.keys(dailyPltLog).filter(d => d < monthStart).sort();
-            if (priorDates.length) lastVal = dailyPltLog[priorDates[priorDates.length - 1]];
+            if (priorDates.length) runningInventory = dailyPltLog[priorDates[priorDates.length - 1]];
 
             for (let day = 1; day <= endDay; day++) {
                 const dStr = `${month}-${String(day).padStart(2,'0')}`;
+                
+                let outPlt = 0;
+                let inPlt = 0;
+                
+                logs.forEach(l => {
+                    if (l.time && l.time.startsWith(dStr)) {
+                        const type = String(l.type || '').toUpperCase();
+                        const qty = Number(l.plt || 0) + (Number(l.pcs || 0) / 120);
+                        if (type.includes('OUT')) outPlt += qty;
+                        else if (type.includes('IN')) inPlt += qty;
+                    }
+                });
+
                 if (dailyPltLog[dStr] !== undefined && dailyPltLog[dStr] !== null) {
-                    lastVal = dailyPltLog[dStr]; 
+                    runningInventory = dailyPltLog[dStr];
+                } else if (runningInventory !== null) {
+                    runningInventory = runningInventory + inPlt - outPlt;
                 }
-                if (lastVal !== null) series[dStr] = lastVal; 
+                
+                // 직접 수정한 값이 있으면 해당 값을 우선순위로 적용
+                if (manualStorageLog[dStr] !== undefined) {
+                    series[dStr] = manualStorageLog[dStr];
+                } else if (runningInventory !== null) {
+                    // 유저 피드백 반영: 출고량(outPlt)을 더하지 않고, 당일 마감 재고(runningInventory)를 보관료 산정 기준으로 적용
+                    series[dStr] = Math.ceil(runningInventory);
+                }
             }
             return series;
         }
@@ -391,7 +413,14 @@
 
         function render() {
             const item = inventory[0];
-            const billingPlt = Math.ceil(((item.plt * 120) + (item.pcs || 0)) / 120);
+            const basePlt = Math.ceil(((item.plt * 120) + (item.pcs || 0)) / 120);
+            
+            let billingPlt = basePlt;
+            const todayStr = getFormattedDate();
+            
+            if (manualStorageLog[todayStr] !== undefined) {
+                billingPlt = manualStorageLog[todayStr];
+            }
 
             document.getElementById('inventoryTable').innerHTML = `
                 <tr>
@@ -467,16 +496,47 @@
         }
 
         function openStorageModal() {
-            document.getElementById('modalTitle').innerText = `📦 보관료 상세`;
+            document.getElementById('modalTitle').innerHTML = `📦 보관료 상세 <span class="text-xs text-indigo-500 font-normal ml-2 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100">직접 수정 가능</span>`;
+            document.querySelector('#detailModal thead').innerHTML = `<tr><th class="p-2 w-24">일자</th><th class="p-2 text-center">정산 파렛트</th><th class="p-2 text-right">보관료</th></tr>`;
+            
             const dailyStorage = buildDailyStorage(currentMonth);
-            document.getElementById('modalBody').innerHTML = Object.keys(dailyStorage).sort().map(d => `
-                <tr><td class="p-2 text-slate-500 font-mono">${d}</td><td class="p-2 text-center font-bold">${dailyStorage[d]} PLT</td><td class="p-2 text-right font-bold text-indigo-600">${(dailyStorage[d]*900).toLocaleString()}원</td></tr>
-            `).join('');
+            const dates = Object.keys(dailyStorage).sort((a,b) => b.localeCompare(a));
+            
+            document.getElementById('modalBody').innerHTML = dates.map(d => {
+                const isManual = manualStorageLog[d] !== undefined;
+                const badge = isManual ? `<div class="text-[9px] text-amber-600 font-bold mt-0.5">수정됨</div>` : '';
+                return `
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                    <td class="p-2 text-slate-500 font-mono text-xs align-middle leading-tight">${d.substring(5)} ${badge}</td>
+                    <td class="p-2 align-middle">
+                        <div class="flex items-center justify-center gap-1">
+                            <input type="number" id="storage_input_${d}" value="${dailyStorage[d]}" class="w-14 p-1 border border-slate-300 rounded text-center font-bold text-indigo-600 outline-none focus:border-indigo-500 text-sm bg-white">
+                            <button onclick="updateDailyStorage('${d}')" class="text-[10px] bg-slate-800 hover:bg-indigo-600 text-white px-2 py-1.5 rounded shadow transition font-bold whitespace-nowrap">저장</button>
+                        </div>
+                    </td>
+                    <td class="p-2 text-right font-bold text-slate-800 align-middle text-sm">
+                        ${(dailyStorage[d]*900).toLocaleString()}원
+                    </td>
+                </tr>
+            `}).join('');
+            
             document.getElementById('detailModal').style.display = 'flex';
         }
 
+        window.updateDailyStorage = function(dateStr) {
+            const inputVal = document.getElementById(`storage_input_${dateStr}`).value;
+            const newVal = parseInt(inputVal);
+            if(isNaN(newVal) || newVal < 0) return alert('올바른 수량을 입력하세요.');
+            
+            manualStorageLog[dateStr] = newVal;
+            saveData();
+            openStorageModal(); // 수정 사항 즉시 반영
+        };
+
         function openInOutModal(type) {
             document.getElementById('modalTitle').innerText = type === 'IN' ? `📥 입고비 상세` : `🚚 출고비 상세`;
+            document.querySelector('#detailModal thead').innerHTML = `<tr><th class="p-2">일시</th><th class="p-2">내용</th><th class="p-2 text-right">금액</th></tr>`;
+            
             const filtered = logs.filter(l => l.time.startsWith(currentMonth) && (type === 'IN' ? l.type === 'IN' : l.type.includes('OUT')));
             document.getElementById('modalBody').innerHTML = filtered.map(l => `
                 <tr><td class="p-2 text-slate-500 font-mono text-xs">${l.time.substring(5)}</td><td class="p-2 font-medium">${l.text.split('] ')[1]}</td><td class="p-2 text-right font-bold text-indigo-600">${l.fee.toLocaleString()}원</td></tr>
