@@ -198,7 +198,6 @@
         const FIREBASE_URL = "https://ts3pl-982ef-default-rtdb.firebaseio.com/forlight_data.json";
         const ADMIN_PW = "4656";
         
-        // 💡 화주사 정정 요구 데이터를 기본 내장하여 초기화 시 즉각 복구 가능하도록 처리
         const defaultInventory = [{ id: "main", name: "60W led", plt: 43, pcs: 36, kpp: 4 }];
         const defaultDailyPlt = {};
         for(let i=1; i<=20; i++) defaultDailyPlt[`2026-05-${String(i).padStart(2,'0')}`] = 64;
@@ -256,14 +255,14 @@
             document.getElementById('pwInput').focus();
         }
 
-        // 월 선택 변경 핸들러 (기존 누락 → 추가)
         function handleMonthChange() {
             currentMonth = document.getElementById('monthSelector').value;
             render();
         }
 
         function fetchData() {
-            fetch(FIREBASE_URL).then(res => res.json()).then(data => {
+            // [캐시 방지 코드 탑재]
+            fetch(FIREBASE_URL + "?t=" + new Date().getTime()).then(res => res.json()).then(data => {
                 if(data) {
                     inventory = data.inventory || defaultInventory;
                     logs = data.logs || defaultLogs;
@@ -290,10 +289,6 @@
             }).then(() => render());
         }
 
-        // ✅ 핵심 수정: 작업이 없는 날도 직전 재고를 이월하여 "오늘"까지 매일 보관 PLT를 채워주는 함수
-        // - 이번 달: 1일 ~ 오늘까지
-        // - 지난 달: 1일 ~ 말일까지
-        // - 미래 달: 보관료 없음(빈 값)
         function buildDailyStorage(month) {
             const series = {};
             const [year, mon] = month.split('-').map(Number);
@@ -302,11 +297,10 @@
             const lastDayOfMonth = new Date(year, mon, 0).getDate();
 
             let endDay;
-            if (month > todayMonthStr) endDay = 0;                 // 미래 달
-            else if (month === todayMonthStr) endDay = today.getDate(); // 이번 달은 오늘까지
-            else endDay = lastDayOfMonth;                          // 지난 달은 말일까지
+            if (month > todayMonthStr) endDay = 0;                 
+            else if (month === todayMonthStr) endDay = today.getDate(); 
+            else endDay = lastDayOfMonth;                          
 
-            // 이번 달 이전 마지막 기록값을 이월 시작값으로 사용 (월초부터 재고가 있는 경우 대비)
             const monthStart = `${month}-01`;
             let lastVal = null;
             const priorDates = Object.keys(dailyPltLog).filter(d => d < monthStart).sort();
@@ -315,14 +309,13 @@
             for (let day = 1; day <= endDay; day++) {
                 const dStr = `${month}-${String(day).padStart(2,'0')}`;
                 if (dailyPltLog[dStr] !== undefined && dailyPltLog[dStr] !== null) {
-                    lastVal = dailyPltLog[dStr]; // 그날 기록이 있으면 갱신
+                    lastVal = dailyPltLog[dStr]; 
                 }
-                if (lastVal !== null) series[dStr] = lastVal; // 기록이 없으면 직전 값 이월
+                if (lastVal !== null) series[dStr] = lastVal; 
             }
             return series;
         }
 
-        // 재고 수정 모달 열기
         function openAdjustModal() {
             const item = inventory[0];
             document.getElementById('adjPlt').value = item.plt;
@@ -333,7 +326,6 @@
 
         function closeAdjustModal() { document.getElementById('adjustModal').style.display = 'none'; }
 
-        // 직접 수정한 재고 값 저장 및 120개 자동 정렬
         function saveAdjustedStock() {
             const plt = parseInt(document.getElementById('adjPlt').value) || 0;
             const pcs = parseInt(document.getElementById('adjPcs').value) || 0;
@@ -345,14 +337,13 @@
             inventory[0].kpp = kpp;
 
             const todayStr = document.getElementById('workDate').value || getFormattedDate();
-            dailyPltLog[todayStr] = Math.ceil(totalPcs / 120); // 올림 처리 보관량 세팅
+            dailyPltLog[todayStr] = Math.ceil(totalPcs / 120); 
             
             closeAdjustModal();
             saveData();
             alert('재고 현황이 성공적으로 수정 조정되었습니다.');
         }
 
-        // 작업 등록 입출고 처리
         function processStock() {
             const dateStr = document.getElementById('workDate').value;
             const type = document.getElementById('workType').value;
@@ -368,8 +359,6 @@
 
             const inputTotalPcs = (plt * 120) + pcs;
             let fee = 0, text = "";
-            
-            // 정산 계산용 파렛트 부피 환산값 생성
             const calcPltValue = inputTotalPcs / 120;
 
             if (type === 'IN') {
@@ -402,7 +391,6 @@
 
         function render() {
             const item = inventory[0];
-            // 보관료 청구 계산용 파렛트 올림값 산정
             const billingPlt = Math.ceil(((item.plt * 120) + (item.pcs || 0)) / 120);
 
             document.getElementById('inventoryTable').innerHTML = `
@@ -439,7 +427,6 @@
                 </div>
             `}).join('');
 
-            // ✅ 보관료: 작업 없는 날도 이월하여 오늘까지 매일 자동 합산
             let sFee = 0, iFee = 0, oFee = 0;
             const dailyStorage = buildDailyStorage(currentMonth);
             Object.keys(dailyStorage).forEach(d => { sFee += dailyStorage[d] * 900; });
@@ -481,7 +468,6 @@
 
         function openStorageModal() {
             document.getElementById('modalTitle').innerText = `📦 보관료 상세`;
-            // ✅ 모달도 동일하게 이월 채움 결과를 사용 → 27, 28일 등 빠진 날 표시됨
             const dailyStorage = buildDailyStorage(currentMonth);
             document.getElementById('modalBody').innerHTML = Object.keys(dailyStorage).sort().map(d => `
                 <tr><td class="p-2 text-slate-500 font-mono">${d}</td><td class="p-2 text-center font-bold">${dailyStorage[d]} PLT</td><td class="p-2 text-right font-bold text-indigo-600">${(dailyStorage[d]*900).toLocaleString()}원</td></tr>
