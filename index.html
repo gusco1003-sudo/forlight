@@ -210,7 +210,8 @@
             { id: 3, type: "OUT_COUPANG", plt: 16, pcs: 0, kpp: 0, fee: 304000, text: "[쿠팡출고] 📦 16PLT 0개", memo: "", time: "2026-05-20 09:15" }
         ];
 
-        let inventory = [], logs = [], dailyPltLog = {}, manualStorageLog = {}, currentMonth = "2026-05";
+        // 💡 [수정 1] 시작 월을 하드코딩("2026-05")하지 않고 항상 "오늘 기준 현재 월"로 자동 설정
+        let inventory = [], logs = [], dailyPltLog = {}, manualStorageLog = {}, currentMonth = getFormattedDate().substring(0, 7);
 
         document.addEventListener("DOMContentLoaded", () => {
             window.pendingAction = 'init'; 
@@ -275,6 +276,16 @@
                     manualStorageLog = {};
                     saveData();
                 }
+
+                // 💡 [수정 2] 루녹스 finishLoading 방식 이식
+                // 오늘 자 보관 스냅샷이 없으면 현재고 기준으로 자동 생성하고, 보는 월을 "현재 월"로 자동 전환한다.
+                // → 6월이 되어도 6월 데이터/탭이 안 생기던 문제 해결 (월 자동 넘어감)
+                const todayStr = getFormattedDate();
+                if (inventory[0] && (dailyPltLog[todayStr] === undefined || dailyPltLog[todayStr] === null)) {
+                    dailyPltLog[todayStr] = Math.ceil(((inventory[0].plt * 120) + (inventory[0].pcs || 0)) / 120);
+                }
+                currentMonth = todayStr.substring(0, 7);
+
                 document.getElementById('cloudStatus').innerText = "🟢 클라우드 서버와 정상 연결됨";
                 document.getElementById('cloudStatus').className = "fixed top-0 left-0 w-full bg-emerald-500 text-white text-[10px] font-bold text-center py-1 z-50";
                 render();
@@ -291,7 +302,7 @@
             }).then(() => render());
         }
 
-        // 💡 [보관료 마감재고 산정 및 강제 수정 연동]
+        // 💡 [보관료 마감재고 산정 및 강제 수정 연동] - 통합 대시보드와 동일 로직 (변경 없음)
         function buildDailyStorage(month) {
             const series = {};
             const [year, mon] = month.split('-').map(Number);
@@ -433,8 +444,16 @@
                 </tr>
             `;
 
-            const months = new Set(["2026-05", ...logs.map(l => l.time.substring(0, 7)), ...Object.keys(dailyPltLog).map(d => d.substring(0, 7))]);
-            document.getElementById('monthSelector').innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}" ${m===currentMonth?'selected':''}>${m.replace('-','년 ')}월</option>`).join('');
+            // 💡 [수정 3] 월 선택 목록을 하드코딩("2026-05") 대신 "현재 월"부터 생성 + manualStorageLog 월도 포함
+            const months = new Set([
+                getFormattedDate().substring(0, 7),
+                ...logs.map(l => l.time.substring(0, 7)),
+                ...Object.keys(dailyPltLog).map(d => d.substring(0, 7)),
+                ...Object.keys(manualStorageLog).map(d => d.substring(0, 7))
+            ]);
+            const sortedMonths = Array.from(months).sort().reverse();
+            if (!sortedMonths.includes(currentMonth)) currentMonth = sortedMonths[0];
+            document.getElementById('monthSelector').innerHTML = sortedMonths.map(m => `<option value="${m}" ${m===currentMonth?'selected':''}>${m.replace('-','년 ')}월</option>`).join('');
             
             document.getElementById('logTitleMonth').innerText = currentMonth;
             const filteredLogs = logs.filter(l => l.time.startsWith(currentMonth) && (!document.getElementById('searchDate').value || l.time.startsWith(document.getElementById('searchDate').value)));
